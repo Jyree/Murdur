@@ -1,6 +1,6 @@
 # Murdur
 
-## Asynchronous image grabber from 4chan with telegram as a wrapper
+## Asynchronous image grabber from 4chan and telegram bot module as example of usage
 
 ## Requirements:
 
