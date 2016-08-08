@@ -10,7 +10,7 @@ from random import seed, choice, shuffle
 import post_multipart
 from urllib.parse import urlencode
 
-BOT_TOKEN = 'TOKEN'
+BOT_TOKEN = 'token'
 SAVE_DIR = './pics/'
 BOARDS = [
     'h',
@@ -118,31 +118,43 @@ def send_new(msg):
         statistics['%s:%s' % (chat_id, username)] = 0
     statistics['%s:%s' % (chat_id, username)] += 1
 
-    print('start sending to %s' % (username), file=stderr)
-    fname = path.join(SAVE_DIR, choice(listdir(SAVE_DIR)))
-    ext = fname[-4:]
+    while(True):
+        print('start sending to %s' % (username), file=stderr)
+        fname = path.join(SAVE_DIR, choice(listdir(SAVE_DIR)))
+        ext = fname[-4:]
 
-    try:
-        with open(fname, 'rb') as fin:
-            if(ext == 'jpeg' or ext == '.png' or ext == '.jpg'):
-                resp = yield post_multipart.posturl('https://api.telegram.org/bot%s/sendPhoto' % BOT_TOKEN,
-                                                    [('chat_id', chat_id),
-                                                     ('disable_notification', True)],
-                                                    [('photo', path.basename(fname), fin.read())])
-            elif(ext == '.gif'):
-                resp = yield post_multipart.posturl('https://api.telegram.org/bot%s/sendDocument' % BOT_TOKEN,
-                                                    [('chat_id', chat_id),
-                                                     ('disable_notification', True)],
-                                                    [('document', path.basename(fname), fin.read())])
-            elif(ext == 'webm'):
-                resp = yield post_multipart.posturl('https://api.telegram.org/bot%s/sendVideo' % BOT_TOKEN,
-                                                    [('chat_id', chat_id),
-                                                     ('disable_notification', True)],
-                                                    [('video', path.basename(fname), fin.read())])
+        try:
+            with open(fname, 'rb') as fin:
+                if(ext == 'jpeg' or ext == '.png' or ext == '.jpg'):
+                    # post('https://api.telegram.org/bot%s/sendPhoto' % BOT_TOKEN,
+                    #         files={'photo': fin})
+                    #         data={'chat_id': chat_id, 'disable_notification': True},
+                    resp = yield post_multipart.posturl('https://api.telegram.org/bot%s/sendPhoto' % BOT_TOKEN,
+                                                        [('chat_id', chat_id),
+                                                         ('disable_notification', True)],
+                                                        [('photo', path.basename(fname), fin.read())])
+                elif(ext == '.gif'):
+                    # post('https://api.telegram.org/bot%s/sendDocument' % BOT_TOKEN,
+                    #         data={'chat_id': chat_id, 'disable_notification': True},
+                    #         files={'document': fin})
+                    resp = yield post_multipart.posturl('https://api.telegram.org/bot%s/sendDocument' % BOT_TOKEN,
+                                                        [('chat_id', chat_id),
+                                                         ('disable_notification', True)],
+                                                        [('document', path.basename(fname), fin.read())])
+                elif(ext == 'webm'):
+                    # post('https://api.telegram.org/bot%s/sendVideo' % BOT_TOKEN,
+                    #         data={'chat_id': chat_id, 'disable_notification': True},
+                    #         files={'video': fin})
+                    resp = yield post_multipart.posturl('https://api.telegram.org/bot%s/sendVideo' % BOT_TOKEN,
+                                                        [('chat_id', chat_id),
+                                                         ('disable_notification', True)],
+                                                        [('video', path.basename(fname), fin.read())])
+        except Exception as e:
+            print('Error occured: ', e, file=stderr)
+            continue
 
-    except Exception as e:
-        raise(e)
-    print('finishing sending to %s' % (username), file=stderr)
+        print('finishing sending to %s' % (username), file=stderr)
+        break
 
 
 @gen.coroutine
