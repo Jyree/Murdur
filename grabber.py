@@ -126,25 +126,16 @@ def send_new(msg):
         try:
             with open(fname, 'rb') as fin:
                 if(ext == 'jpeg' or ext == '.png' or ext == '.jpg'):
-                    # post('https://api.telegram.org/bot%s/sendPhoto' % BOT_TOKEN,
-                    #         files={'photo': fin})
-                    #         data={'chat_id': chat_id, 'disable_notification': True},
                     resp = yield post_multipart.posturl('https://api.telegram.org/bot%s/sendPhoto' % BOT_TOKEN,
                                                         [('chat_id', chat_id),
                                                          ('disable_notification', True)],
                                                         [('photo', path.basename(fname), fin.read())])
                 elif(ext == '.gif'):
-                    # post('https://api.telegram.org/bot%s/sendDocument' % BOT_TOKEN,
-                    #         data={'chat_id': chat_id, 'disable_notification': True},
-                    #         files={'document': fin})
                     resp = yield post_multipart.posturl('https://api.telegram.org/bot%s/sendDocument' % BOT_TOKEN,
                                                         [('chat_id', chat_id),
                                                          ('disable_notification', True)],
                                                         [('document', path.basename(fname), fin.read())])
                 elif(ext == 'webm'):
-                    # post('https://api.telegram.org/bot%s/sendVideo' % BOT_TOKEN,
-                    #         data={'chat_id': chat_id, 'disable_notification': True},
-                    #         files={'video': fin})
                     resp = yield post_multipart.posturl('https://api.telegram.org/bot%s/sendVideo' % BOT_TOKEN,
                                                         [('chat_id', chat_id),
                                                          ('disable_notification', True)],
@@ -159,12 +150,32 @@ def send_new(msg):
 
 @gen.coroutine
 def send_help(msg):
-    yield send_message(msg['message']['chat']['id'], 'Use \\new to request pic!')
+    yield send_message(msg['message']['chat']['id'], 'Use /new to request pic!')
 
 
 @gen.coroutine
 def send_start(msg):
-    pass  # Duck the start
+    text = msg['message']['text']
+    chat_id = msg['message']['chat']['id']
+
+    layout = [
+        [ '/new', '/new50'],
+        ['/new10', '/new25']
+    ]
+
+    repl = json.dumps({
+        'keyboard': layout,
+        'resize_keyboard': True,
+        'selective': True
+    })
+
+    req = urlencode({
+        'chat_id': str(chat_id),
+        'reply_markup': repl,
+        'text': 'Hi there, stranger!'
+    })
+
+    repl = yield AsyncHTTPClient().fetch('https://api.telegram.org/bot%s/sendMessage?%s' % (BOT_TOKEN, req))
 
 
 @gen.coroutine
@@ -203,16 +214,19 @@ mp = (
 def proc_message(msg):
     try:
         text = msg['message']['text']
+
         for rec in mp:
             if(re.match(rec[0], text)):
                 yield gen.Task(rec[1], msg)
                 break
+
     except KeyError as e:
         return
 
 
 @gen.engine
 def telegram_bot():
+
     try:
         with open('last', 'r') as f:
             l = int(f.readline())
